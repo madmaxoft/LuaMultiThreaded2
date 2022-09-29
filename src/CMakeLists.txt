@@ -43,6 +43,9 @@ set(TESTS
 	HelloWorld.lua
 	ThreadAvailable.lua
 	ThreadSleep.lua
+	HelloThread.lua
+	NestedThreadCreation.lua
+	RaceCondition.lua
 )
 
 
@@ -50,7 +53,7 @@ set(TESTS
 foreach(test IN LISTS TESTS)
 	add_test(
 		NAME ${test}
-		COMMAND LuaMultiThreaded ${test}
+		COMMAND LuaMultiThreaded2 ${test}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../tests
 	)
 endforeach()

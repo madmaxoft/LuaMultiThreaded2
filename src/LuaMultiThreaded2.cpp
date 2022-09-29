@@ -17,8 +17,9 @@ using LuaState = lua_State;
 
 
 
-/** All the threads that are currently alive. */
-std::vector<std::thread> gThreads;
+/** The name of the thread's Lua object's metatable within the Lua registry.
+Every thread object that is pushed to the Lua side has the metatable of this name set to it. */
+static const char * THREAD_METATABLE_NAME = "std::thread *";
 
 
 
@@ -80,15 +81,19 @@ extern "C" static int threadNew(LuaState * aState)
 	lua_rawgeti(luaThread, LUA_REGISTRYINDEX, luaFnRef);  // ... push it onto the new thread's stack...
 	luaL_unref(aState, LUA_REGISTRYINDEX, luaFnRef);      // ... and remove it from the registry
 
+	// Push the (currently empty) thread object to the Lua side
+	auto threadObj = reinterpret_cast<std::thread **>(lua_newuserdata(aState, sizeof(std::thread **)));
+	luaL_setmetatable(aState, THREAD_METATABLE_NAME);
+
 	// Start the new thread:
-	gThreads.emplace_back(
+	*threadObj = new std::thread(
 		[luaThread]()
 		{
 			auto numParams = lua_gettop(luaThread) - 2;
 			lua_pcall(luaThread, numParams, LUA_MULTRET, 1);
 		}
 	);
-	return 0;
+	return 1;
 }
 
 
@@ -108,6 +113,98 @@ extern "C" static int threadSleep(LuaState * aState)
 
 
 
+/** Implements the thread:join() function.
+Joins the specified thread.
+Errors if asked to join the current thread. */
+extern "C" static int threadObjJoin(LuaState * aState)
+{
+	auto threadObj = reinterpret_cast<std::thread **>(luaL_checkudata(aState, 1, THREAD_METATABLE_NAME));
+	if (threadObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "`thread' expected");
+		return 0;
+	}
+	if (*threadObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "thread already joined");
+		return 0;
+	}
+	if ((*threadObj)->get_id() == std::this_thread::get_id())
+	{
+		luaL_argerror(aState, 0, "`thread' must not be the current thread");
+		return 0;
+	}
+	(*threadObj)->join();
+	*threadObj = nullptr;
+	return 0;
+}
+
+
+
+
+
+/** Implements the thread:id() function.
+Returns the thread's ID, as an implementation-dependent detail.
+The ID is guaranteed to be unique within a single process at any single time moment (but not within multiple time moments). */
+extern "C" static int threadObjID(LuaState * aState)
+{
+	auto threadObj = reinterpret_cast<std::thread **>(luaL_checkudata(aState, 1, THREAD_METATABLE_NAME));
+	if (threadObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "`thread' expected");
+		return 0;
+	}
+	if (*threadObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "thread already joined");
+		return 0;
+	}
+	if ((*threadObj)->get_id() == std::this_thread::get_id())
+	{
+		luaL_argerror(aState, 0, "`thread' must not be the current thread");
+		return 0;
+	}
+	std::stringstream ss;
+	ss << (*threadObj)->get_id();
+	auto str = ss.str();
+	lua_pushlstring(aState, str.data(), str.size());
+	return 1;
+}
+
+
+
+
+
+/** Called when the Lua side GC's the thread object.
+Joins the thread, if not already joined. */
+extern "C" static int threadObjGc(LuaState * aState)
+{
+	auto threadObj = reinterpret_cast<std::thread **>(luaL_checkudata(aState, 1, THREAD_METATABLE_NAME));
+	// We shouldn't get an invalid thread object, but let's check nevertheless:
+	if (threadObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "`thread' expected");
+		return 0;
+	}
+	if (*threadObj == nullptr)
+	{
+		return 0;
+	}
+	if ((*threadObj)->get_id() == std::this_thread::get_id())
+	{
+		// Current thread is GC-ing self? No idea if that is allowed to happen, but we don't care; just don't join
+		return 0;
+	}
+	(*threadObj)->join();
+	*threadObj = nullptr;
+	return 0;
+}
+
+
+
+
+
+/** The functions in the thread library. */
 static const luaL_Reg threadFuncs[] =
 {
 	{"new", &threadNew},
@@ -119,10 +216,31 @@ static const luaL_Reg threadFuncs[] =
 
 
 
+/** The functions of the thread object. */
+static const luaL_Reg threadObjFuncs[] =
+{
+	{"join", &threadObjJoin},
+	{"id",   &threadObjID},
+	{"__gc", &threadObjGc},
+	{NULL, NULL}
+};
+
+
+
+
+
 /** Registers the thread library into the Lua VM. */
 extern "C" static int luaopen_thread(LuaState * aState)
 {
 	luaL_newlib(aState, threadFuncs);
+
+	// Register the metatable for std::thread objects:
+	luaL_newmetatable(aState, THREAD_METATABLE_NAME);
+	lua_pushvalue(aState, -1);
+	lua_setfield(aState, -2, "__index");  // metatable.__index = metatable
+	luaL_setfuncs(aState, threadObjFuncs, 0);  // Add the object functions to the table
+	lua_pop(aState, 1);  // pop the new metatable
+
 	return 1;
 }
 
@@ -168,10 +286,6 @@ int main(int argc, char * argv[])
 	}
 	lua_pcall(L, argc - 2, LUA_MULTRET, 1);
 
-	for (auto & th: gThreads)
-	{
-		th.join();
-	}
 	return 0;
 }
 

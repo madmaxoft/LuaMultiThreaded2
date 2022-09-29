@@ -18,6 +18,3 @@ thread.new(
 	end
 )
 print("main")
-
--- Sleep for 1 second to let the threads finish in the meantime (we don't have synchronization yet):
-thread.sleep(1)
