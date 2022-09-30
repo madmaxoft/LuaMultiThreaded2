@@ -27,4 +27,4 @@ std::string lua_getstring(lua_State * L, int aIndex);
 std::string lua_getstringfield(lua_State * L, int aTableIndex, const char * aFieldName);
 
 /** Pushes the value of a std::thread::id into a lua stack as a string */
-int pushThreadIdOnLuaStack(lua_State* aState, std::thread::id aThreadId);
+int pushThreadIdOnLuaStack(lua_State * aState, const std::thread::id & aThreadId);

@@ -31,7 +31,7 @@ std::string lua_getstringfield(lua_State * L, int aTableIndex, const char * aFie
 
 
 
-int pushThreadIdOnLuaStack(lua_State* aState, std::thread::id aThreadId)
+int pushThreadIdOnLuaStack(lua_State * aState, const std::thread::id & aThreadId)
 {
 	std::stringstream ss;
 	ss << aThreadId;
