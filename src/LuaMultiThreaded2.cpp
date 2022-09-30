@@ -175,6 +175,21 @@ extern "C" static int threadObjID(LuaState * aState)
 
 
 
+/** Implements the thread.currentid() function.
+Returns the current thread's ID. */
+extern "C" static int threadCurrentID(LuaState * aState)
+{
+	std::stringstream ss;
+	ss << std::this_thread::get_id();
+	auto str = ss.str();
+	lua_pushlstring(aState, str.data(), str.size());
+	return 1;
+}
+
+
+
+
+
 /** Called when the Lua side GC's the thread object.
 Joins the thread, if not already joined. */
 extern "C" static int threadObjGc(LuaState * aState)
@@ -209,6 +224,7 @@ static const luaL_Reg threadFuncs[] =
 {
 	{"new", &threadNew},
 	{"sleep", &threadSleep},
+	{"currentid", &threadCurrentID},
 	{NULL, NULL}
 };
 
