@@ -31,3 +31,16 @@ std::string lua_getstringfield(lua_State * L, int aTableIndex, const char * aFie
 
 
 
+int pushThreadIdOnLuaStack(lua_State * aState, const std::thread::id & aThreadId)
+{
+	std::stringstream ss;
+	ss << aThreadId;
+	auto str = ss.str();
+	lua_pushlstring(aState, str.data(), str.size());
+	return 1;
+}
+
+
+
+
+

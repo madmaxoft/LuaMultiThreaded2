@@ -1,5 +1,4 @@
 #include <iostream>
-#include <sstream>
 #include <thread>
 #include <mutex>
 #include <vector>
@@ -164,11 +163,18 @@ extern "C" static int threadObjID(LuaState * aState)
 		luaL_argerror(aState, 0, "`thread' must not be the current thread");
 		return 0;
 	}
-	std::stringstream ss;
-	ss << (*threadObj)->get_id();
-	auto str = ss.str();
-	lua_pushlstring(aState, str.data(), str.size());
-	return 1;
+	return pushThreadIdOnLuaStack(aState, (*threadObj)->get_id());
+}
+
+
+
+
+
+/** Implements the thread.currentid() function.
+Returns the current thread's ID. This also works on the main thread. */
+extern "C" static int threadCurrentID(LuaState * aState)
+{
+	return pushThreadIdOnLuaStack(aState, std::this_thread::get_id());
 }
 
 
@@ -209,6 +215,7 @@ static const luaL_Reg threadFuncs[] =
 {
 	{"new", &threadNew},
 	{"sleep", &threadSleep},
+	{"currentid", &threadCurrentID},
 	{NULL, NULL}
 };
 
