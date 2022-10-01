@@ -38,9 +38,7 @@ local function isPrime(n)
 end
 
 -- Thread function. Will check for primes in the provided limits.
-local thrFunc = function(outputIndex, min, max)
-	local output = {}
-	
+local thrFunc = function(output, min, max)
 	-- Go through every number between min and max.
 	-- If the number is a prime save it in output.
 	for number = min, max do
@@ -48,17 +46,15 @@ local thrFunc = function(outputIndex, min, max)
 			table.insert(output, number);
 		end
 	end
-
-	-- Save the output of this thread in the threads variable.
-	threads[outputIndex].output = output;
 end
 
 -- Create new threads and provide the limits where they should look for primes as parameters.
 for I = 0, NUM_THREADS - 1 do
 	local idx = #threads + 1;
 	local batchStart = I * BATCH_SIZE_PER_THREAD;
-	local thr = thread.new(thrFunc, idx, batchStart, batchStart + BATCH_SIZE_PER_THREAD)
-	threads[idx] = {thread = thr, output = {}}
+	local output = {}
+	local thr = thread.new(thrFunc, output, batchStart, batchStart + BATCH_SIZE_PER_THREAD)
+	threads[idx] = {thread = thr, output = output}
 end
 
 -- Loop through every created thread and join them. 
