@@ -73,12 +73,12 @@ extern "C" static int threadNew(LuaState * aState)
 {
 	static std::recursive_mutex mtx;
 	std::scoped_lock lock(mtx);
-	auto args = lua_gettop(aState);
+	auto numParams = lua_gettop(aState);
 	luaL_checktype(aState, 1, LUA_TFUNCTION);
 	auto luaThread = lua_newthread(aState);
 
 	// Move all the provided parameters to the new thread.
-	for (int i = 1; i < args + 1; i++) 
+	for (int i = 1; i < numParams + 1; i++) 
 	{
 		lua_pushvalue(aState, i);                             // Push a copy of the parameter to the top of the stack...
 		auto luaFnRef = luaL_ref(aState, LUA_REGISTRYINDEX);  // ... move it to the registry...
@@ -93,10 +93,9 @@ extern "C" static int threadNew(LuaState * aState)
 
 	// Start the new thread:
 	*threadObj = new std::thread(
-		[luaThread, args]()
+		[luaThread, numParams]()
 		{
-			auto numParams = args - 1;
-			lua_pcall(luaThread, numParams, LUA_MULTRET, 1);
+			lua_pcall(luaThread, numParams - 1, LUA_MULTRET, 1);
 		}
 	);
 	return 1;
