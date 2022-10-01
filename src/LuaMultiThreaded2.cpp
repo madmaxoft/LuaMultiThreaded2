@@ -19,6 +19,7 @@ using LuaState = lua_State;
 /** The name of the thread's Lua object's metatable within the Lua registry.
 Every thread object that is pushed to the Lua side has the metatable of this name set to it. */
 static const char * THREAD_METATABLE_NAME = "std::thread *";
+static const char* MUTEX_METATABLE_NAME = "std::mutex *";
 
 
 
@@ -63,6 +64,47 @@ extern "C" int errorHandler(LuaState * L)
 	exit(1);
 }
 
+
+
+
+
+
+extern "C" static int mutexNew(LuaState * aState)
+{
+	lua_pushcfunction(aState, errorHandler);
+
+	// Push the (currently empty) mutex object to the Lua side
+	auto mutexObj = reinterpret_cast<std::mutex**>(lua_newuserdata(aState, sizeof(std::mutex**)));
+	luaL_setmetatable(aState, MUTEX_METATABLE_NAME);
+
+	// Create the new mutex:
+	*mutexObj = new std::mutex();
+	return 1;
+}
+
+
+
+
+
+
+
+/** */
+extern "C" static int mutexLock(LuaState * aState)
+{
+	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	if (mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	(*mutexObj)->lock();
+	auto numParams = lua_gettop(aState);
+	luaL_checktype(aState, 2, LUA_TFUNCTION);
+	lua_pcall(aState, 0, 0, 0);
+	(*mutexObj)->unlock();
+
+	return 0;
+}
 
 
 
@@ -236,6 +278,28 @@ static const luaL_Reg threadObjFuncs[] =
 
 
 
+/***/
+static const luaL_Reg mutexFuncs[] =
+{
+	{"new", &mutexNew},
+	{NULL,NULL}
+};
+
+
+
+
+
+/** */
+static const luaL_Reg mutexObjFuncs[] =
+{
+	{"lock", &mutexLock},
+	{NULL, NULL}
+};
+
+
+
+
+
 /** Registers the thread library into the Lua VM. */
 extern "C" static int luaopen_thread(LuaState * aState)
 {
@@ -246,6 +310,25 @@ extern "C" static int luaopen_thread(LuaState * aState)
 	lua_pushvalue(aState, -1);
 	lua_setfield(aState, -2, "__index");  // metatable.__index = metatable
 	luaL_setfuncs(aState, threadObjFuncs, 0);  // Add the object functions to the table
+	lua_pop(aState, 1);  // pop the new metatable
+
+	return 1;
+}
+
+
+
+
+
+/**Registers the mutex library into the Lua VM. */
+extern "C" static int luaopen_mutex(LuaState * aState)
+{
+	luaL_newlib(aState, mutexFuncs);
+
+	// Register the metatable for std::thread objects:
+	luaL_newmetatable(aState, MUTEX_METATABLE_NAME);
+	lua_pushvalue(aState, -1);
+	lua_setfield(aState, -2, "__index");  // metatable.__index = metatable
+	luaL_setfuncs(aState, mutexObjFuncs, 0);  // Add the object functions to the table
 	lua_pop(aState, 1);  // pop the new metatable
 
 	return 1;
@@ -268,6 +351,7 @@ int main(int argc, char * argv[])
 	// Add the libraries:
 	luaL_openlibs(L);
 	luaL_requiref(L, "thread", &luaopen_thread, true);
+	luaL_requiref(L, "mutex", &luaopen_mutex, true);
 	lua_pop(L, 1);
 	lua_settop(L, 0);  // Trim off all excess values left over by the reg functions
 
