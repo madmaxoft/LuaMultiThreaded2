@@ -73,13 +73,19 @@ extern "C" static int threadNew(LuaState * aState)
 {
 	static std::recursive_mutex mtx;
 	std::scoped_lock lock(mtx);
+	auto args = lua_gettop(aState);
 	luaL_checktype(aState, 1, LUA_TFUNCTION);
-	lua_pushvalue(aState, 1);                             // Push a copy of the fn to the top of the stack...
-	auto luaFnRef = luaL_ref(aState, LUA_REGISTRYINDEX);  // ... move it to the registry...
 	auto luaThread = lua_newthread(aState);
+
+	// Move all the provided parameters to the new thread.
+	for (int i = 1; i < args + 1; i++) 
+	{
+		lua_pushvalue(aState, i);                             // Push a copy of the parameter to the top of the stack...
+		auto luaFnRef = luaL_ref(aState, LUA_REGISTRYINDEX);  // ... move it to the registry...
+		lua_rawgeti(luaThread, LUA_REGISTRYINDEX, luaFnRef);  // ... push it onto the new thread's stack...
+		luaL_unref(aState, LUA_REGISTRYINDEX, luaFnRef);      // ... and remove it from the registry
+	}
 	lua_pushcfunction(aState, errorHandler);
-	lua_rawgeti(luaThread, LUA_REGISTRYINDEX, luaFnRef);  // ... push it onto the new thread's stack...
-	luaL_unref(aState, LUA_REGISTRYINDEX, luaFnRef);      // ... and remove it from the registry
 
 	// Push the (currently empty) thread object to the Lua side
 	auto threadObj = reinterpret_cast<std::thread **>(lua_newuserdata(aState, sizeof(std::thread **)));
@@ -87,9 +93,9 @@ extern "C" static int threadNew(LuaState * aState)
 
 	// Start the new thread:
 	*threadObj = new std::thread(
-		[luaThread]()
+		[luaThread, args]()
 		{
-			auto numParams = lua_gettop(luaThread) - 2;
+			auto numParams = args - 1;
 			lua_pcall(luaThread, numParams, LUA_MULTRET, 1);
 		}
 	);
