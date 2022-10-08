@@ -19,7 +19,7 @@ using LuaState = lua_State;
 /** The name of the thread's Lua object's metatable within the Lua registry.
 Every thread object that is pushed to the Lua side has the metatable of this name set to it. */
 static const char * THREAD_METATABLE_NAME = "std::thread *";
-static const char* MUTEX_METATABLE_NAME = "std::mutex *";
+static const char * MUTEX_METATABLE_NAME = "std::mutex *";
 
 
 
@@ -88,8 +88,8 @@ extern "C" static int mutexNew(LuaState * aState)
 
 
 
-/** */
-extern "C" static int mutexLock(LuaState * aState)
+/** Executes the provided function while the mutex is locked. */
+extern "C" static int mutexDoWhileLocked(LuaState * aState)
 {
 	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
@@ -97,10 +97,15 @@ extern "C" static int mutexLock(LuaState * aState)
 		luaL_argerror(aState, 0, "'mutex' expected");
 		return 0;
 	}
+	if (*mutexObj == nullptr) 
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
 	(*mutexObj)->lock();
 	auto numParams = lua_gettop(aState);
 	luaL_checktype(aState, 2, LUA_TFUNCTION);
-	lua_pcall(aState, 0, 0, 0);
+	lua_pcall(aState, numParams - 2, 0, 0);
 	(*mutexObj)->unlock();
 
 	return 0;
@@ -278,7 +283,7 @@ static const luaL_Reg threadObjFuncs[] =
 
 
 
-/***/
+/** The functions in the mutex library. */
 static const luaL_Reg mutexFuncs[] =
 {
 	{"new", &mutexNew},
@@ -289,10 +294,10 @@ static const luaL_Reg mutexFuncs[] =
 
 
 
-/** */
+/** The functions of the mutex object.  */
 static const luaL_Reg mutexObjFuncs[] =
 {
-	{"lock", &mutexLock},
+	{"dowhilelocked", &mutexDoWhileLocked},
 	{NULL, NULL}
 };
 
@@ -319,7 +324,7 @@ extern "C" static int luaopen_thread(LuaState * aState)
 
 
 
-/**Registers the mutex library into the Lua VM. */
+/** Registers the mutex library into the Lua VM. */
 extern "C" static int luaopen_mutex(LuaState * aState)
 {
 	luaL_newlib(aState, mutexFuncs);

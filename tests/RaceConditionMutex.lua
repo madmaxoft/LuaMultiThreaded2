@@ -16,7 +16,7 @@ local mtx = mutex.new();
 --- The thread function, executed in two threads in parallel
 local function thrFunc()
 	for i = 1, MAX_COUNTER do
-		mtx:lock(function()
+		mtx:dowhilelocked(function()
 			a = a + 1
 		end)
 	end
