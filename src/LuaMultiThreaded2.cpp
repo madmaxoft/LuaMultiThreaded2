@@ -115,6 +115,50 @@ extern "C" static int mutexDoWhileLocked(LuaState * aState)
 
 
 
+/** Locks the provided mutex. */
+extern "C" static int mutexLock(LuaState * aState) 
+{
+	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	if (mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	if (*mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	(*mutexObj)->lock();
+	return 0;
+}
+
+
+
+
+
+/** Unlocks the provided mutex. */
+extern "C" static int mutexUnlock(LuaState * aState) 
+{
+	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	if (mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	if (*mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	(*mutexObj)->unlock();
+	return 0;
+}
+
+
+
+
+
 extern "C" static int threadNew(LuaState * aState)
 {
 	static std::recursive_mutex mtx;
@@ -298,6 +342,8 @@ static const luaL_Reg mutexFuncs[] =
 static const luaL_Reg mutexObjFuncs[] =
 {
 	{"dowhilelocked", &mutexDoWhileLocked},
+	{"lock", &mutexLock},
+	{"unlock", &mutexUnlock},
 	{NULL, NULL}
 };
 
