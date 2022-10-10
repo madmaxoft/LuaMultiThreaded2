@@ -25,14 +25,14 @@ static const char * THREAD_METATABLE_NAME = "std::thread *";
 
 
 /** Dumps the contents of the Lua stack to the specified ostream. */
-static void dumpLuaStack(LuaState * L, std::ostream & aDest)
+static void dumpLuaStack(LuaState * aState, std::ostream & aDest)
 {
 	aDest << "Lua stack contents:" << std::endl;
-	for (int i = lua_gettop(L); i >= 0; --i)
+	for (int i = lua_gettop(aState); i >= 0; --i)
 	{
 		aDest << "  " << i << "\t";
-		aDest << lua_typename(L, lua_type(L, i)) << "\t";
-		aDest << lua_getstring(L, i).c_str() << std::endl;
+		aDest << lua_typename(aState, lua_type(aState, i)) << "\t";
+		aDest << lua_getstring(aState, i).c_str() << std::endl;
 	}
 	aDest << "(stack dump completed)" << std::endl;
 }
@@ -42,11 +42,11 @@ static void dumpLuaStack(LuaState * L, std::ostream & aDest)
 
 
 /** Dumps the call stack to the specified ostream. */
-static void dumpLuaTraceback(LuaState * L, std::ostream & aDest)
+static void dumpLuaTraceback(LuaState * aState, std::ostream & aDest)
 {
-	luaL_traceback(L, L, "Stack trace: ", 0);
-	aDest << lua_getstring(L, -1).c_str() << std::endl;
-	lua_pop(L, 1);
+	luaL_traceback(aState, aState, "Stack trace: ", 0);
+	aDest << lua_getstring(aState, -1).c_str() << std::endl;
+	lua_pop(aState, 1);
 	return;
 }
 
@@ -55,11 +55,11 @@ static void dumpLuaTraceback(LuaState * L, std::ostream & aDest)
 
 
 /** Called by Lua when it encounters an unhandler error in the script file. */
-extern "C" int errorHandler(LuaState * L)
+extern "C" int errorHandler(LuaState * aState)
 {
-	auto err = lua_getstring(L, -1);
+	auto err = lua_getstring(aState, -1);
 	std::cerr << "Caught an error: " << err << std::endl;
-	dumpLuaStack(L, std::cerr);
+	dumpLuaStack(aState, std::cerr);
 	exit(1);
 }
 
