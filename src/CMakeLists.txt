@@ -40,12 +40,15 @@ target_link_libraries(LuaMultiThreaded2
 
 
 set(TESTS
-	HelloWorld.lua
-	ThreadAvailable.lua
-	ThreadSleep.lua
+	CurrentThreadId.lua
 	HelloThread.lua
+	HelloWorld.lua
 	NestedThreadCreation.lua
 	RaceCondition.lua
+	RaceConditionMutex.lua
+	ThreadAvailable.lua
+	ThreadParameters.lua
+	ThreadSleep.lua
 )
 
 
