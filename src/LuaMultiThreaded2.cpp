@@ -68,13 +68,14 @@ extern "C" int errorHandler(LuaState * L)
 
 
 
-
+/** Creates a new mutex object.
+Returns: The mutex object with the functions in mutexObjFuncs as methods in it's metatable. */
 extern "C" static int mutexNew(LuaState * aState)
 {
 	lua_pushcfunction(aState, errorHandler);
 
 	// Push the (currently empty) mutex object to the Lua side
-	auto mutexObj = reinterpret_cast<std::mutex**>(lua_newuserdata(aState, sizeof(std::mutex**)));
+	auto mutexObj = reinterpret_cast<std::mutex **>(lua_newuserdata(aState, sizeof(std::mutex **)));
 	luaL_setmetatable(aState, MUTEX_METATABLE_NAME);
 
 	// Create the new mutex:
@@ -86,12 +87,10 @@ extern "C" static int mutexNew(LuaState * aState)
 
 
 
-
-
 /** Executes the provided function while the mutex is locked. */
 extern "C" static int mutexDoWhileLocked(LuaState * aState)
 {
-	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
 	{
 		luaL_argerror(aState, 0, "'mutex' expected");
@@ -99,7 +98,7 @@ extern "C" static int mutexDoWhileLocked(LuaState * aState)
 	}
 	if (*mutexObj == nullptr) 
 	{
-		luaL_argerror(aState, 0, "'mutex' expected");
+		luaL_argerror(aState, 0, "Internal error: 'mutex' object is invalid");
 		return 0;
 	}
 	(*mutexObj)->lock();
@@ -118,7 +117,7 @@ extern "C" static int mutexDoWhileLocked(LuaState * aState)
 /** Locks the provided mutex. */
 extern "C" static int mutexLock(LuaState * aState) 
 {
-	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
 	{
 		luaL_argerror(aState, 0, "'mutex' expected");
@@ -126,7 +125,7 @@ extern "C" static int mutexLock(LuaState * aState)
 	}
 	if (*mutexObj == nullptr)
 	{
-		luaL_argerror(aState, 0, "'mutex' expected");
+		luaL_argerror(aState, 0, "Internal error: 'mutex' object is invalid");
 		return 0;
 	}
 	(*mutexObj)->lock();
@@ -140,7 +139,7 @@ extern "C" static int mutexLock(LuaState * aState)
 /** Unlocks the provided mutex. */
 extern "C" static int mutexUnlock(LuaState * aState) 
 {
-	auto mutexObj = reinterpret_cast<std::mutex**>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
 	{
 		luaL_argerror(aState, 0, "'mutex' expected");
@@ -148,7 +147,7 @@ extern "C" static int mutexUnlock(LuaState * aState)
 	}
 	if (*mutexObj == nullptr)
 	{
-		luaL_argerror(aState, 0, "'mutex' expected");
+		luaL_argerror(aState, 0, "Internal error: 'mutex' object is invalid");
 		return 0;
 	}
 	(*mutexObj)->unlock();
@@ -159,6 +158,9 @@ extern "C" static int mutexUnlock(LuaState * aState)
 
 
 
+/** Starts a new thread and runs the provided Lua function on it. 
+Parameter: The Lua callback which will be called on the new thread.
+Returns: The thread object with the functions in threadObjFuncs as methods in it's metatable. */
 extern "C" static int threadNew(LuaState * aState)
 {
 	static std::recursive_mutex mtx;
