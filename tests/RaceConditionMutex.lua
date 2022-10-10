@@ -17,7 +17,7 @@ local mtx = mutex.new();
 local function thrFunc()
 	for i = 1, MAX_COUNTER do
 		mtx:dowhilelocked(function()
-			a = a + 1
+			a = a + 1	
 		end)
 	end
 end
@@ -32,9 +32,5 @@ local thread2 = thread.new(thrFunc)
 thread1:join()
 thread2:join()
 
-if (a == 2 * MAX_COUNTER) then
-	print("No race condition detected")
-else
-	print("Race condition detected:")
-	print("a = " .. tostring(a) .. "(expected " .. 2 * MAX_COUNTER .. ")")
-end
+assert(a == 2 * MAX_COUNTER, "Race condition detected: a = " .. tostring(a) .. "(expected " .. 2 * MAX_COUNTER .. ")");
+
