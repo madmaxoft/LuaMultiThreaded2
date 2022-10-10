@@ -10,6 +10,9 @@ This is an experiment / playground to test if it is possible to run Lua code in 
 - [x] Check that the code actually runs in parallel
 - [ ] Check whether there are race conditions possible, and what they do (crash? bad data?)
 - [ ] Make sure the thread API plays nice with Lua's GC, esp. wrt. the `lua_newthread` object collection.
-- [ ] Add synchronization primitives (`mutex`, ...?).
+- [ ] Add synchronization primitives
+   - [x] Mutex
+   - [ ] Semaphore?
+   - [ ] Atomics?
 - [ ] Check whether access to globals protected by mutexes is safe.
 - [ ] Split the thread API into a library that can be reused.
