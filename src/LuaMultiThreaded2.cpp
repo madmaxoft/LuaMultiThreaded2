@@ -158,6 +158,27 @@ extern "C" static int mutexObjUnlock(LuaState * aState)
 
 
 
+/** Called when the Lua side GC's the mutex object. */
+extern "C" static int mutexObjGc(LuaState * aState)
+{
+	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
+	if (mutexObj == nullptr)
+	{
+		luaL_argerror(aState, 0, "'mutex' expected");
+		return 0;
+	}
+	if (*mutexObj == nullptr)
+	{
+		return 0;
+	}
+	*mutexObj = nullptr;
+	return 0;
+}
+
+
+
+
+
 /** Starts a new thread and runs the provided Lua function on it. 
 Parameter: The Lua callback which will be called on the new thread.
 Returns: The thread object with the functions in threadObjFuncs as methods in it's metatable. */
@@ -351,6 +372,7 @@ static const luaL_Reg mutexObjFuncs[] =
 	{"dowhilelocked", &mutexObjDoWhileLocked},
 	{"lock",          &mutexObjLock},
 	{"unlock",        &mutexObjUnlock},
+	{"__gc",          &mutexObjGc},
 	{nullptr,         nullptr}
 };
 
