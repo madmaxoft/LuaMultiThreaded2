@@ -88,7 +88,7 @@ extern "C" static int mutexNew(LuaState * aState)
 
 
 /** Executes the provided function while the mutex is locked. */
-extern "C" static int mutexDoWhileLocked(LuaState * aState)
+extern "C" static int mutexObjDoWhileLocked(LuaState * aState)
 {
 	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
@@ -115,7 +115,7 @@ extern "C" static int mutexDoWhileLocked(LuaState * aState)
 
 
 /** Locks the provided mutex. */
-extern "C" static int mutexLock(LuaState * aState) 
+extern "C" static int mutexObjLock(LuaState * aState)
 {
 	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
@@ -137,7 +137,7 @@ extern "C" static int mutexLock(LuaState * aState)
 
 
 /** Unlocks the provided mutex. */
-extern "C" static int mutexUnlock(LuaState * aState) 
+extern "C" static int mutexObjUnlock(LuaState * aState)
 {
 	auto mutexObj = reinterpret_cast<std::mutex **>(luaL_checkudata(aState, 1, MUTEX_METATABLE_NAME));
 	if (mutexObj == nullptr)
@@ -311,10 +311,10 @@ extern "C" static int threadObjGc(LuaState * aState)
 /** The functions in the thread library. */
 static const luaL_Reg threadFuncs[] =
 {
-	{"new", &threadNew},
-	{"sleep", &threadSleep},
+	{"new",       &threadNew},
+	{"sleep",     &threadSleep},
 	{"currentid", &threadCurrentID},
-	{NULL, NULL}
+	{nullptr,     nullptr}
 };
 
 
@@ -324,10 +324,10 @@ static const luaL_Reg threadFuncs[] =
 /** The functions of the thread object. */
 static const luaL_Reg threadObjFuncs[] =
 {
-	{"join", &threadObjJoin},
-	{"id",   &threadObjID},
-	{"__gc", &threadObjGc},
-	{NULL, NULL}
+	{"join",  &threadObjJoin},
+	{"id",    &threadObjID},
+	{"__gc",  &threadObjGc},
+	{nullptr, nullptr}
 };
 
 
@@ -337,8 +337,8 @@ static const luaL_Reg threadObjFuncs[] =
 /** The functions in the mutex library. */
 static const luaL_Reg mutexFuncs[] =
 {
-	{"new", &mutexNew},
-	{NULL,NULL}
+	{"new",   &mutexNew},
+	{nullptr, nullptr}
 };
 
 
@@ -348,10 +348,10 @@ static const luaL_Reg mutexFuncs[] =
 /** The functions of the mutex object.  */
 static const luaL_Reg mutexObjFuncs[] =
 {
-	{"dowhilelocked", &mutexDoWhileLocked},
-	{"lock", &mutexLock},
-	{"unlock", &mutexUnlock},
-	{NULL, NULL}
+	{"dowhilelocked", &mutexObjDoWhileLocked},
+	{"lock",          &mutexObjLock},
+	{"unlock",        &mutexObjUnlock},
+	{nullptr,         nullptr}
 };
 
 
