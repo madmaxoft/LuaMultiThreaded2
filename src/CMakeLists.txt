@@ -43,6 +43,7 @@ set(TESTS
 	CurrentThreadId.lua
 	HelloThread.lua
 	HelloWorld.lua
+	MultiThreadedStrings.lua
 	MutexGc.lua
 	NestedThreadCreation.lua
 	RaceCondition.lua
